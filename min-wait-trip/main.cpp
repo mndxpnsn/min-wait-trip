@@ -80,9 +80,11 @@ double min_time_rec(double * t, double * d, int n, double D, double dmax, int s,
     }
     
     // Compute optimum route
-    for(int st = s + 1; st < n && st <= ns; ++st) {
-        double cost = t[st] + min_time_rec(t, d, n, D, dmax, st, d[st], dp);
-        res = min(res, cost);
+    if(dist < D) {
+        for(int st = s + 1; st < n && st <= ns; ++st) {
+            double cost = t[st] + min_time_rec(t, d, n, D, dmax, st, d[st], dp);
+            res = min(res, cost);
+        }
     }
     
     // Store data in memo table
@@ -101,9 +103,11 @@ double min_time_rec_no_dp(double * t, double * d, int n, double D, double dmax, 
     }
     
     // Compute optimum route
-    for(int st = s + 1; st < n && st <= ns; ++st) {
-        double cost = t[st] + min_time_rec_no_dp(t, d, n, D, dmax, st, d[st]);
-        res = min(res, cost);
+    if(dist < D) {
+        for(int st = s + 1; st < n && st <= ns; ++st) {
+            double cost = t[st] + min_time_rec_no_dp(t, d, n, D, dmax, st, d[st]);
+            res = min(res, cost);
+        }
     }
     
     return res;
