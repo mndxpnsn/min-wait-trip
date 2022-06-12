@@ -80,8 +80,8 @@ double min_time_rec(double * t, double * d, int n, double D, double dmax, int s,
     }
     
     // Compute optimum route
-    if(dist < D) {
-        for(int st = s + 1; st < n && st <= ns; ++st) {
+    for(int st = s + 1; st < n && st <= ns; ++st) {
+        if(d[st] < D) {
             double cost = t[st] + min_time_rec(t, d, n, D, dmax, st, d[st], dp);
             res = min(res, cost);
         }
@@ -103,8 +103,8 @@ double min_time_rec_no_dp(double * t, double * d, int n, double D, double dmax, 
     }
     
     // Compute optimum route
-    if(dist < D) {
-        for(int st = s + 1; st < n && st <= ns; ++st) {
+    for(int st = s + 1; st < n && st <= ns; ++st) {
+        if(d[st] < D) {
             double cost = t[st] + min_time_rec_no_dp(t, d, n, D, dmax, st, d[st]);
             res = min(res, cost);
         }
