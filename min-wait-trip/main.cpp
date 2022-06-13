@@ -11,6 +11,8 @@
 #include <time.h>
 #include <vector>
 
+const double LARGE_NUM = 3e8;
+
 int ops = 0;
 
 double min(double x, double y) {
@@ -46,27 +48,17 @@ void init_t(int n, double * t) {
 }
 
 void init_d(int n, double * d, double D, double dmax) {
-    double min_x = 0;
-    double max_x = dmax;
-    double min_b = 0.0;
-    
-    srand((unsigned) time(NULL));
 
     for(int i = 0; i < n; ++i) {
-        double f1 = (double) rand() / RAND_MAX;
-        double x = min_b + f1 * (max_x - min_x);
-
-        d[i] = x;
-        
-        min_b = x;
+        d[i] = (i + 1) * D / (n + 1);
     }
-    
-    
 }
 
-double min_time_rev(double * t, double * d, int n, double D, double dmax, int m, double * dp) {
+double min_time_rev(double * t, double * d, int n, double D, double dmax, int m, double * dp, std::vector<int> & v, std::map<int, bool> & dpmap) {
 
     double res = 0.0;
+    double bounds = LARGE_NUM;
+    int cut = -1;
     
     int index = n - m - 1;
     
@@ -74,8 +66,8 @@ double min_time_rev(double * t, double * d, int n, double D, double dmax, int m,
     ops++;
     
     // Get data from memo table if available
-    if(dp[m] != 0.0) {
-        return dp[m];
+    if(dp[index] != 0.0) {
+        return dp[index];
     }
     
     // Boundary
@@ -84,9 +76,9 @@ double min_time_rev(double * t, double * d, int n, double D, double dmax, int m,
     }
     
     // Last station
-    if(m == 0) {
-        return t[index];
-    }
+//    if(m == 0) {
+//        return t[index];
+//    }
     
     // Final distance within reach
     if(D - d[index] <= dmax) {
@@ -103,12 +95,21 @@ double min_time_rev(double * t, double * d, int n, double D, double dmax, int m,
     
     // Compute minimum wait time
     for(int del = 1; del <= diff; ++del) {
-        double cost = t[index] + min_time_rev(t, d, n, D, dmax, m - del, dp);
+        double cost = t[index] + min_time_rev(t, d, n, D, dmax, m - del, dp, v, dpmap);
         res = min(res, cost);
+        if(cost < bounds) {
+            bounds = cost;
+            cut = m - del + 1;
+        }
+    }
+    
+    if(cut != -1 && !dpmap[cut]) {
+        v.push_back(cut);
+        dpmap[cut] = true;
     }
     
     // Store data in memo table
-    dp[m] = res;
+    dp[index] = res;
     
     return res;
 }
@@ -167,8 +168,12 @@ void free_dp(double * dp) {
     delete [] dp;
 }
 
-double min_time(double * t, double * d, int n, double D, double dmax) {
+double min_time(double * t, double * d, int n, double D, double dmax, std::vector<int> & v) {
     double res = 0.0;
+    double bounds = LARGE_NUM;
+    int cut = -1;
+    
+    std::map<int, bool> dpmap;
     
     // Initialize memo table
     double * dp = init_dp(n + 1);
@@ -183,8 +188,17 @@ double min_time(double * t, double * d, int n, double D, double dmax) {
     
     // Compute minimum wait time
     for(int del = 1; del <= diff; ++del) {
-        double cost = min_time_rev(t, d, n, D, dmax, n - del, dp);
+        double cost = min_time_rev(t, d, n, D, dmax, n - del, dp, v, dpmap);
         res = min(res, cost);
+        if(cost < bounds) {
+            bounds = cost;
+            cut = n - del + 1;
+        }
+    }
+    
+    if(cut != -1 && !dpmap[cut]) {
+        v.push_back(cut);
+        dpmap[cut] = true;
     }
     
     // Free memo table
@@ -226,30 +240,13 @@ int main(int argc, const char * argv[]) {
     // Declare and initialize wait time and station distances
     double * t = new double[n];
     double * d = new double[n];
+    std::vector<int> route;
     
-//    init_t(n, t);
-//    init_d(n, d, D, dmax);
-    
-    d[0] = 12.0;
-    d[1] = 25.0;
-    d[2] = 29.0;
-    d[3] = 50.0;
-    d[4] = 53.0;
-    d[5] = 60.0;
-    d[6] = 70.0;
-    d[7] = 90.0;
-    
-    t[0] = 30.0;
-    t[1] = 25.0;
-    t[2] = 2.0;
-    t[3] = 36.0;
-    t[4] = 5.0;
-    t[5] = 31.0;
-    t[6] = 1.0;
-    t[7] = 10.0;
+    init_t(n, t);
+    init_d(n, d, D, dmax);
     
     // Compute minimum waiting time
-    double min_wait = min_time(t, d, n, D, dmax);
+    double min_wait = min_time(t, d, n, D, dmax, route);
     double min_wait_no_dp = min_time_no_dp(t, d, n, D, dmax);
     
     // Print results
