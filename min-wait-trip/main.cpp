@@ -11,8 +11,6 @@
 #include <time.h>
 #include <vector>
 
-const double LARGE_NUM = 3e8;
-
 int ops = 0;
 
 double min(double x, double y) {
@@ -54,11 +52,9 @@ void init_d(int n, double * d, double D, double dmax) {
     }
 }
 
-double min_time_rev(double * t, double * d, int n, double D, double dmax, int m, double * dp, std::vector<int> & v, std::map<int, bool> & dpmap) {
+double min_time_rev(double * t, double * d, int n, double D, double dmax, int m, double * dp) {
 
     double res = 0.0;
-    double bounds = LARGE_NUM;
-    int cut = -1;
     
     int index = n - m - 1;
     
@@ -75,11 +71,6 @@ double min_time_rev(double * t, double * d, int n, double D, double dmax, int m,
         return 0;
     }
     
-    // Last station
-//    if(m == 0) {
-//        return t[index];
-//    }
-    
     // Final distance within reach
     if(D - d[index] <= dmax) {
         return t[index];
@@ -95,17 +86,8 @@ double min_time_rev(double * t, double * d, int n, double D, double dmax, int m,
     
     // Compute minimum wait time
     for(int del = 1; del <= diff; ++del) {
-        double cost = t[index] + min_time_rev(t, d, n, D, dmax, m - del, dp, v, dpmap);
+        double cost = t[index] + min_time_rev(t, d, n, D, dmax, m - del, dp);
         res = min(res, cost);
-        if(cost < bounds) {
-            bounds = cost;
-            cut = m - del + 1;
-        }
-    }
-    
-    if(cut != -1 && !dpmap[cut]) {
-        v.push_back(cut);
-        dpmap[cut] = true;
     }
     
     // Store data in memo table
@@ -168,12 +150,8 @@ void free_dp(double * dp) {
     delete [] dp;
 }
 
-double min_time(double * t, double * d, int n, double D, double dmax, std::vector<int> & v) {
+double min_time(double * t, double * d, int n, double D, double dmax) {
     double res = 0.0;
-    double bounds = LARGE_NUM;
-    int cut = -1;
-    
-    std::map<int, bool> dpmap;
     
     // Initialize memo table
     double * dp = init_dp(n + 1);
@@ -188,17 +166,8 @@ double min_time(double * t, double * d, int n, double D, double dmax, std::vecto
     
     // Compute minimum wait time
     for(int del = 1; del <= diff; ++del) {
-        double cost = min_time_rev(t, d, n, D, dmax, n - del, dp, v, dpmap);
+        double cost = min_time_rev(t, d, n, D, dmax, n - del, dp);
         res = min(res, cost);
-        if(cost < bounds) {
-            bounds = cost;
-            cut = n - del + 1;
-        }
-    }
-    
-    if(cut != -1 && !dpmap[cut]) {
-        v.push_back(cut);
-        dpmap[cut] = true;
     }
     
     // Free memo table
@@ -246,7 +215,7 @@ int main(int argc, const char * argv[]) {
     init_d(n, d, D, dmax);
     
     // Compute minimum waiting time
-    double min_wait = min_time(t, d, n, D, dmax, route);
+    double min_wait = min_time(t, d, n, D, dmax);
     double min_wait_no_dp = min_time_no_dp(t, d, n, D, dmax);
     
     // Print results
