@@ -6,7 +6,10 @@
 //
 
 #include <iostream>
+#include <map>
+#include <set>
 #include <time.h>
+#include <vector>
 
 int ops = 0;
 
@@ -55,59 +58,94 @@ void init_d(int n, double * d, double D, double dmax) {
 
         d[i] = x;
         
-        std::cout << "x: " << x << std::endl;
-        
         min_b = x;
     }
     
     
 }
 
-double min_time_rec(double * t, double * d, int n, double D, double dmax, int s, double dist, double * dp) {
+double min_time_rev(double * t, double * d, int n, double D, double dmax, int m, double * dp) {
+
     double res = 0.0;
     
+    int index = n - m - 1;
+    
+    // Compute number of operations
     ops++;
     
+    // Get data from memo table if available
+    if(dp[m] != 0.0) {
+        return dp[m];
+    }
+    
+    // Boundary
+    if(m < 0) {
+        return 0;
+    }
+    
+    // Last station
+    if(m == 0) {
+        return t[index];
+    }
+    
+    // Final distance within reach
+    if(D - d[index] <= dmax) {
+        return t[index];
+    }
+
+    // Compute stations in range
+    int j = index;
+    while(j < n && d[j + 1] - d[index] <= dmax) {
+        j++;
+    }
+    
+    int diff = j - index;
+    
+    // Compute minimum wait time
+    for(int del = 1; del <= diff; ++del) {
+        double cost = t[index] + min_time_rev(t, d, n, D, dmax, m - del, dp);
+        res = min(res, cost);
+    }
+    
     // Store data in memo table
-    if(dp[s + 1] != 0) {
-        return dp[s + 1];
-    }
-    
-    // Determine stations in range
-    int ns = s + 1;
-    while(ns < n && d[ns] - dist <= dmax) {
-        ns++;
-    }
-    
-    // Compute optimum route
-    for(int st = s + 1; st < n && st <= ns; ++st) {
-        if(d[st] < D) {
-            double cost = t[st] + min_time_rec(t, d, n, D, dmax, st, d[st], dp);
-            res = min(res, cost);
-        }
-    }
-    
-    // Store data in memo table
-    dp[s + 1] = res;
+    dp[m] = res;
     
     return res;
 }
 
-double min_time_rec_no_dp(double * t, double * d, int n, double D, double dmax, int s, double dist) {
+double min_time_rec_no_dp(double * t, double * d, int n, double D, double dmax, int m) {
+    
     double res = 0.0;
     
-    // Determine stations in range
-    int ns = s + 1;
-    while(ns < n && d[ns] - dist <= dmax) {
-        ns++;
+    int index = n - m - 1;
+    
+    // Boundary
+    if(m < 0) {
+        return 0;
     }
     
-    // Compute optimum route
-    for(int st = s + 1; st < n && st <= ns; ++st) {
-        if(d[st] < D) {
-            double cost = t[st] + min_time_rec_no_dp(t, d, n, D, dmax, st, d[st]);
-            res = min(res, cost);
-        }
+    // Last station
+    if(m == 0) {
+        return t[index];
+    }
+    
+    // Final distance within reach
+    if(D - d[index] <= dmax) {
+        return t[index];
+    }
+
+    // Compute stations in reach
+    int j = index;
+    while(j < n && d[j + 1] - d[index] <= dmax) {
+        j++;
+    }
+    
+    int diff = j - index;
+    
+    // Compute minimum wait time
+    for(int del = 1; del <= diff; ++del) {
+        double cost = t[index] + min_time_rec_no_dp(t, d, n, D, dmax, m - del);
+        res = min(res, cost);
     }
     
     return res;
@@ -135,8 +173,19 @@ double min_time(double * t, double * d, int n, double D, double dmax) {
     // Initialize memo table
     double * dp = init_dp(n + 1);
     
+    // Compute stations in range
+    int j = 0;
+    while(j < n && d[j] <= dmax) {
+        j++;
+    }
+    
+    int diff = j;
+    
     // Compute minimum wait time
-    res = min_time_rec(t, d, n, D, dmax, -1, 0.0, dp);
+    for(int del = 1; del <= diff; ++del) {
+        double cost = min_time_rev(t, d, n, D, dmax, n - del, dp);
+        res = min(res, cost);
+    }
     
     // Free memo table
     free_dp(dp);
@@ -147,8 +196,18 @@ double min_time(double * t, double * d, int n, double D, double dmax) {
 double min_time_no_dp(double * t, double * d, int n, double D, double dmax) {
     double res = 0.0;
     
+    int j = 0;
+    while(j < n && d[j] <= dmax) {
+        j++;
+    }
+    
+    int diff = j;
+    
     // Compute minimum wait time
-    res = min_time_rec_no_dp(t, d, n, D, dmax, -1, 0.0);
+    for(int del = 1; del <= diff; ++del) {
+        double cost = min_time_rec_no_dp(t, d, n, D, dmax, n - del);
+        res = min(res, cost);
+    }
     
     return res;
 }
@@ -156,20 +215,38 @@ double min_time_no_dp(double * t, double * d, int n, double D, double dmax) {
 int main(int argc, const char * argv[]) {
     
     // Number of pump stations
-    int n = 29;
+    int n = 8;
     
     // Drive distance
     double D = 100.0;
     
     // Max drive distance on full tank
-    double dmax = 10.0;
+    double dmax = 30.0;
     
     // Declare and initialize wait time and station distances
     double * t = new double[n];
     double * d = new double[n];
     
-    init_t(n, t);
-    init_d(n, d, D, dmax);
+//    init_t(n, t);
+//    init_d(n, d, D, dmax);
+    
+    d[0] = 12.0;
+    d[1] = 25.0;
+    d[2] = 29.0;
+    d[3] = 50.0;
+    d[4] = 53.0;
+    d[5] = 60.0;
+    d[6] = 70.0;
+    d[7] = 90.0;
+    
+    t[0] = 30.0;
+    t[1] = 25.0;
+    t[2] = 2.0;
+    t[3] = 36.0;
+    t[4] = 5.0;
+    t[5] = 31.0;
+    t[6] = 1.0;
+    t[7] = 10.0;
     
     // Compute minimum waiting time
     double min_wait = min_time(t, d, n, D, dmax);
