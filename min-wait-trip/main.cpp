@@ -2,7 +2,7 @@
 //  main.cpp
 //  min-wait-trip
 //
-//  Created by Derek Harrison on 11/06/2022.
+//  Created by mndx on 11/06/2022.
 //
 
 #include <iostream>
@@ -73,19 +73,20 @@ double min_time_rev(double * t, double * d, int n, double D, double dmax, int m,
     
     // Final distance within reach
     if(D - d[index] <= dmax) {
+        dp[index] = t[index];
         return t[index];
     }
 
     // Compute stations in range
     int j = index;
-    while(j < n && d[j + 1] - d[index] <= dmax) {
+    while(j < n && d[j] - d[index] <= dmax) {
         j++;
     }
     
     int diff = j - index;
     
     // Compute minimum wait time
-    for(int del = 1; del <= diff; ++del) {
+    for(int del = 1; del < diff; ++del) {
         double cost = t[index] + min_time_rev(t, d, n, D, dmax, m - del, dp);
         res = min(res, cost);
     }
@@ -119,14 +120,14 @@ double min_time_rec_no_dp(double * t, double * d, int n, double D, double dmax, 
 
     // Compute stations in reach
     int j = index;
-    while(j < n && d[j + 1] - d[index] <= dmax) {
+    while(j < n && d[j] - d[index] <= dmax) {
         j++;
     }
     
     int diff = j - index;
     
     // Compute minimum wait time
-    for(int del = 1; del <= diff; ++del) {
+    for(int del = 1; del < diff; ++del) {
         double cost = t[index] + min_time_rec_no_dp(t, d, n, D, dmax, m - del);
         res = min(res, cost);
     }
@@ -209,7 +210,6 @@ int main(int argc, const char * argv[]) {
     // Declare and initialize wait time and station distances
     double * t = new double[n];
     double * d = new double[n];
-    std::vector<int> route;
     
     init_t(n, t);
     init_d(n, d, D, dmax);
