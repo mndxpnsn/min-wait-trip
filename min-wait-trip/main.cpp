@@ -62,8 +62,8 @@ double min_time_rev(double * t, double * d, int n, double D, double dmax, int m,
     ops++;
     
     // Get data from memo table if available
-    if(dp[index] != 0.0) {
-        return dp[index];
+    if(dp[m] != 0.0) {
+        return dp[m];
     }
     
     // Boundary
@@ -73,26 +73,26 @@ double min_time_rev(double * t, double * d, int n, double D, double dmax, int m,
     
     // Final distance within reach
     if(D - d[index] <= dmax) {
-        dp[index] = t[index];
+        dp[m] = t[index];
         return t[index];
     }
 
     // Compute stations in range
     int j = index;
-    while(j < n && d[j] - d[index] <= dmax) {
+    while(j + 1 < n && d[j + 1] - d[index] <= dmax) {
         j++;
     }
     
     int diff = j - index;
     
     // Compute minimum wait time
-    for(int del = 1; del < diff; ++del) {
+    for(int del = 1; del <= diff; ++del) {
         double cost = t[index] + min_time_rev(t, d, n, D, dmax, m - del, dp);
         res = min(res, cost);
     }
     
     // Store data in memo table
-    dp[index] = res;
+    dp[m] = res;
     
     return res;
 }
@@ -151,11 +151,9 @@ void free_dp(double * dp) {
     delete [] dp;
 }
 
-double min_time(double * t, double * d, int n, double D, double dmax) {
-    double res = 0.0;
+double min_time_wrap(double * t, double * d, int n, double D, double dmax, double * dp) {
     
-    // Initialize memo table
-    double * dp = init_dp(n + 1);
+    double res = 0.0;
     
     // Compute stations in range
     int j = 0;
@@ -171,15 +169,29 @@ double min_time(double * t, double * d, int n, double D, double dmax) {
         res = min(res, cost);
     }
     
+    return res;
+}
+
+double min_time(double * t, double * d, int n, double D, double dmax) {
+    double res = 0.0;
+    
+    // Initialize memo table
+    double * dp = init_dp(n + 1);
+    
+    // Compute minimum wait time
+    res = min_time_wrap(t, d, n, D, dmax, dp);
+    
     // Free memo table
     free_dp(dp);
     
     return res;
 }
 
-double min_time_no_dp(double * t, double * d, int n, double D, double dmax) {
+double min_time_wrap_no_dp(double * t, double * d, int n, double D, double dmax) {
+    
     double res = 0.0;
     
+    // Compute stations in range
     int j = 0;
     while(j < n && d[j] <= dmax) {
         j++;
@@ -196,10 +208,15 @@ double min_time_no_dp(double * t, double * d, int n, double D, double dmax) {
     return res;
 }
 
+double min_time_no_dp(double * t, double * d, int n, double D, double dmax) {
+
+    return min_time_wrap_no_dp(t, d, n, D, dmax);
+}
+
 int main(int argc, const char * argv[]) {
     
     // Number of pump stations
-    int n = 8;
+    int n = 18;
     
     // Drive distance
     double D = 100.0;
